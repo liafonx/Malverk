@@ -1,4 +1,4 @@
-Malverk.joker_config = SMODS.shallow_copy(G.P_CENTERS.j_joker)
+Malverk.joker_config = copy_table(G.P_CENTERS.j_joker)
 
 function G.FUNCS.textures_button(e)
 	G.SETTINGS.paused = true
@@ -304,6 +304,33 @@ function Card:highlight(highlighted)
     end
 end
 
+local card_single_tap = Card.single_tap
+function Card:single_tap()
+    if self.params and (self.params.texture_pack or self.params.texture_priority) then
+        if self.area and self.area.highlighted then
+            if self.highlighted then
+                self.area:remove_from_highlighted(self)
+                play_sound('cardSlide2', nil, 0.3)
+            else
+                self.area:add_to_highlighted(self)
+            end
+        else
+            self:highlight(not self.highlighted)
+        end
+        G.MOBILE_VIBRATION_QUEUE = math.max(G.MOBILE_VIBRATION_QUEUE or 0, 1)
+        return
+    end
+    return card_single_tap(self)
+end
+
+local card_can_long_press = Card.can_long_press
+function Card:can_long_press()
+    if self.params and (self.params.texture_pack or self.params.texture_priority) then
+        return true
+    end
+    return card_can_long_press(self)
+end
+
 local applied_shader = SMODS.Shader({key = 'texture_selected', path = 'applied.fs'})
 local settings_atlas = SMODS.Atlas{key = 'settings', path = 'settings.png', px = 32, py = 32}
 function create_texture_pack_buttons(card, active)
@@ -469,7 +496,7 @@ function create_texture_card(area, texture_pack)
         end
     end
     local card = Card(area.T.x, area.T.y, G.CARD_W, G.CARD_H,
-        nil, SMODS.shallow_copy(Malverk.joker_config),
+        nil, copy_table(Malverk.joker_config),
         {texture_pack = texture_pack})
     
     local layer = texture.animated and 'animatedSprite' or texture.set == 'Sticker' and 'front' or 'center'    
